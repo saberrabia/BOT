@@ -3,12 +3,12 @@ import pandas as pd
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext
 from time import sleep
-
+from flask import Flask, request
 # إعدادات بوت تلجرام
 TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
 CHAT_ID = '7039034340'
 bot = Bot(token=TELEGRAM_TOKEN)
-
+app = Flask(__name__)
 # إعدادات KuCoin
 kucoin = ccxt.kucoin({
     'apiKey': '6607359fb8fd3800012ae3ba',
@@ -70,11 +70,15 @@ def monitor_symbols():
         if price:
             send_alert(symbol, price)
         sleep(1)  # لتجنب تجاوز الحدود المسموح بها من قبل API
+@app.route('/')
+def home(): 
 
+	return 'Your telegram bot is Working !'
+    
 def main():
     while True:
         monitor_symbols()
         sleep(60)  # الانتظار لمدة 60 ثانية قبل المراقبة مرة أخرى
 
 if __name__ == '__main__':
-    main()
+    app.run(port=80)
