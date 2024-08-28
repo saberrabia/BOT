@@ -5,15 +5,15 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 from time import sleep
 
 # إعدادات بوت تلجرام
-TELEGRAM_TOKEN = 7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM
-CHAT_ID = 7039034340
+TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
+CHAT_ID = '7039034340'
 bot = Bot(token=TELEGRAM_TOKEN)
 
 # إعدادات KuCoin
 kucoin = ccxt.kucoin({
-    apiKey': 6607359fb8fd3800012ae3ba',
-    secret': @Se123456789',
-    password': 9499b29e-4f5f-4453-8468-1346f9a1308d'
+    apiKey': '6607359fb8fd3800012ae3ba',
+    secret': '@Se123456789',
+    password': '9499b29e-4f5f-4453-8468-1346f9a1308d'
 })
 
 def fetch_symbols():
