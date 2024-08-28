@@ -81,4 +81,4 @@ def main():
         sleep(60)  # الانتظار لمدة 60 ثانية قبل المراقبة مرة أخرى
 
 if __name__ == '__main__':
-    app.run(port=80)
+    app.run(host='0.0.0.0',port=80)
