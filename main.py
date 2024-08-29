@@ -8,7 +8,7 @@ from flask import Flask, request
 TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
 CHAT_ID = '7039034340'
 bot = Bot(token=TELEGRAM_TOKEN)
-app = Flask(__name__)
+
 # إعدادات KuCoin
 kucoin = ccxt.kucoin({
     'apiKey': '6607359fb8fd3800012ae3ba',
@@ -81,4 +81,4 @@ def main():
         sleep(60)  # الانتظار لمدة 60 ثانية قبل المراقبة مرة أخرى
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',port=80)
+    app.run(host='0.0.0.0',port=8000)
