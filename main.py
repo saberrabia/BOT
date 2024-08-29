@@ -11,9 +11,9 @@ bot = Bot(token=TELEGRAM_TOKEN)
 
 # إعدادات KuCoin
 kucoin = ccxt.kucoin({
-    'apiKey': '6607359fb8fd3800012ae3ba',
-    'secret': '@Se123456789',
-    'password': '9499b29e-4f5f-4453-8468-1346f9a1308d'
+    'apiKey': '',
+    'secret': '',
+    'password': ''
 })
 
 def fetch_symbols():
