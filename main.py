@@ -5,8 +5,17 @@ import time
 import asyncio
 from telegram import Bot
 
+# إعداد مفاتيح API
+API_KEY = 'vb8XtTkcJLgNPV4YksosK2OxlLxSR29CYC7Lk9SdfRVI7bJMEMoIlom9zrpZxD27'
+API_SECRET = 'xVAsBuzajfnWnxm5BYfTuMWdhyVgsGs0EOR9DBsbxfvsOd4ZfdipQO4aZ9uVakDe'
+
 # إعداد البورصة
-exchange = ccxt.binance()
+exchange = ccxt.binance({
+    'apiKey': API_KEY,
+    'secret': API_SECRET,
+})
+
+# قائمة الرموز الزمنية
 symbols = [
     'BTC/USDT', 'ETH/USDT', 'NEIRO/USDT', 'SOL/USDT', '1000PEPE/USDT',
      'WIF/USDT', '1MBABYDOGE/USDT', 'ENA/USDT', 'WLD/USDT',
@@ -68,6 +77,7 @@ symbols = [
     'ARPA/USDT', 'DENT/USDT', 'XEM/USDT', 'BTCDOM/USDT', 'COMBO/USDT',
     'OXT/USDT', 'HFT/USDT', 'BNT/USDT', 'LSK/USDT', 'DEFI/USDT',
 ]
+
 timeframe = '15m'
 
 
@@ -76,7 +86,8 @@ TELEGRAM_API_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
 CHAT_ID = '7039034340'
 bot = Bot(token=TELEGRAM_API_TOKEN)
 
-# دالة للحصول على بيانات الشمعة
+
+# دالة لجلب بيانات الشمعة
 def fetch_data(symbol):
     ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=100)
     df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
@@ -135,13 +146,8 @@ async def main():
                 previous_signals[symbol]['sell'] = True
                 previous_signals[symbol]['buy'] = False
 
-        await asyncio.sleep(900)  # الانتظار لمدة 15 دقيقة قبل التحقق مرة أخرى
+        await asyncio.sleep(900)  # الانتظار لمدة 15 دقيقة
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-
-
 
