@@ -124,8 +124,8 @@ def fetch_price_change(symbol):
     return change
 
 # دالة لإرسال التنبيهات عبر تلغرام
-def send_telegram_alert(message):
-    bot.send_message(chat_id=CHAT_ID, text=message)
+async def send_telegram_alert(message):
+    await bot.send_message(chat_id=CHAT_ID, text=message)
 
 # حلقة التحقق المستمرة
 async def main():
@@ -134,12 +134,15 @@ async def main():
     while True:
         price_changes = {}
 
+        # جلب تغييرات الأسعار
         for symbol in symbols:
             price_changes[symbol] = fetch_price_change(symbol)
 
+        # الحصول على أعلى وأدنى 10 عملات
         top_10 = sorted(price_changes.items(), key=lambda x: x[1], reverse=True)[:10]
         bottom_10 = sorted(price_changes.items(), key=lambda x: x[1])[:10]
 
+        # إعداد قائمة للعملات التي سنقوم بالتنبيه عنها
         alerts = top_10 + bottom_10
 
         for symbol, change in alerts:
@@ -153,7 +156,7 @@ async def main():
                 previous_signals[symbol]['buy'] = True
                 previous_signals[symbol]['sell'] = False
 
-                await send_telegram_alert(message)  # استخدم await هنا
+                await send_telegram_alert(message)
 
             if sell_signal and not previous_signals[symbol]['sell']:
                 message = f"تنبيه: إشارة بيع لـ {symbol} (تغير: {change:.2f}%) في {df['timestamp'].iloc[-1]}"
@@ -161,10 +164,9 @@ async def main():
                 previous_signals[symbol]['sell'] = True
                 previous_signals[symbol]['buy'] = False
 
-                await send_telegram_alert(message)  # استخدم await هنا
+                await send_telegram_alert(message)
 
         await asyncio.sleep(60)  # الانتظار لمدة 1 دقيقة
-
 
 
 if __name__ == "__main__":
