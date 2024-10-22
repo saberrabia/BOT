@@ -140,10 +140,10 @@ async def main():
 
         # الحصول على أعلى وأدنى 10 عملات
         top_10 = sorted(price_changes.items(), key=lambda x: x[1], reverse=True)[:10]
-        bottom_10 = sorted(price_changes.items(), key=lambda x: x[1])[:10]
+       
 
         # إعداد قائمة للعملات التي سنقوم بالتنبيه عنها
-        alerts = top_10 + bottom_10
+        alerts = top_10
 
         for symbol, change in alerts:
             df = fetch_data(symbol)
