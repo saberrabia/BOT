@@ -1,24 +1,12 @@
 import ccxt
-import pandas as pd
+import time
 import asyncio
-from telegram import Bot
+from telegram import Update
+from telegram.ext import ApplicationBuilder
+from datetime import datetime, timedelta
 
-# إعداد مفاتيح API
-API_KEY = 'vb8XtTkcJLgNPV4YksosK2OxlLxSR29CYC7Lk9SdfRVI7bJMEMoIlom9zrpZxD27'
-API_SECRET = 'xVAsBuzajfnWnxm5BYfTuMWdhyVgsGs0EOR9DBsbxfvsOd4ZfdipQO4aZ9uVakDe'
-TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
-CHAT_ID = '7039034340'
-
-# إعداد البورصة
-exchange = ccxt.binance({
-    'apiKey': API_KEY,
-    'secret': API_SECRET,
-})
-
-# إعداد بوت تلغرام
-bot = Bot(token=TELEGRAM_TOKEN)
-
-# قائمة الرموز الزمنية
+# إعدادات
+exchange = ccxt.binance()
 symbols = [
     'BTC/USDT', 'ETH/USDT', 'NEIRO/USDT', 'SOL/USDT', '1000PEPE/USDT',
      'WIF/USDT', '1MBABYDOGE/USDT', 'ENA/USDT', 'WLD/USDT',
@@ -81,94 +69,70 @@ symbols = [
     'OXT/USDT', 'HFT/USDT', 'BNT/USDT', 'LSK/USDT', 'DEFI/USDT',
 ]
 
+# إعداد بوت تلجرام
+TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
+CHAT_ID = '7039034340'
 
-timeframe = '1m'
+# دالة لجلب تغييرات الأسعار في آخر 24 ساعة
+def fetch_24h_changes():
+    changes = {}
+    for symbol in symbols:
+        ticker = exchange.fetch_ticker(symbol)
+        changes[symbol] = ticker['percentage']
+    return changes
 
-# دالة لجلب بيانات الشمعة
-def fetch_data(symbol):
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=100)
-    df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    return df
+# دالة لتحديد العملات الصاعدة
+def check_top_up(changes):
+    valid_changes = {symbol: change for symbol, change in changes.items() if change is not None}
+    sorted_changes = sorted(valid_changes.items(), key=lambda x: x[1])
+    top_up = sorted_changes[-10:]
+    return top_up
 
-# دالة لحساب EMA
-def calculate_ema(data, period):
-    return data['close'].ewm(span=period, adjust=False).mean()
+# قائمة لتتبع العملات وتوقيتها
+tracked_up = {}
+last_sent_time = {}
 
-# دالة لتوليد التنبيهات
-def check_signals(df):
-    df['ema_5'] = calculate_ema(df, 5)
-    df['ema_100'] = calculate_ema(df, 100)
-    df['rolling_mean'] = df['close'].rolling(window=20).mean()
-    df['rolling_std'] = df['close'].rolling(window=20).std()
-    df['upper'] = df['rolling_mean'] + (df['rolling_std'] * 2)
-    df['lower'] = df['rolling_mean'] - (df['rolling_std'] * 2)
+# إعداد تطبيق تلجرام
+app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
 
-    last_row = df.iloc[-1]
+# دالة لإرسال الرسالة عبر تلجرام
+async def send_message(text):
+    await app.bot.send_message(chat_id=CHAT_ID, text=text)
 
-    # شروط الشراء
-    buy_signal = (last_row['close'] > last_row['upper']) and (last_row['high'] == df['high'].max()) and (last_row['ema_5'] > last_row['ema_100'])
+# دالة للمراقبة
+async def monitor():
+    global tracked_up, last_sent_time
+    initial_changes = fetch_24h_changes()
+    top_up = check_top_up(initial_changes)
 
-    # شروط البيع
-    sell_signal = (last_row['close'] < last_row['lower']) and (last_row['low'] == df['low'].min()) and (last_row['ema_5'] < last_row['ema_100'])
-
-    return buy_signal, sell_signal
-
-# دالة لحساب تغير السعر
-def fetch_price_change(symbol):
-    ohlcv = exchange.fetch_ohlcv(symbol, '1h', limit=24)  # 24 ساعة
-    prices = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
-    prices['timestamp'] = pd.to_datetime(prices['timestamp'], unit='ms')
-
-    change = (prices['close'].iloc[-1] - prices['close'].iloc[0]) / prices['close'].iloc[0] * 100
-    return change
-
-# دالة لإرسال التنبيهات عبر تلغرام
-async def send_telegram_alert(message):
-    await bot.send_message(chat_id=CHAT_ID, text=message)
-
-# حلقة التحقق المستمرة
-async def main():
-    previous_signals = {symbol: {'buy': False, 'sell': False} for symbol in symbols}
+    for symbol, change in top_up:
+        tracked_up[symbol] = change
+        last_sent_time[symbol] = datetime.now()
+        await send_message(f"عملة حالياً في قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
 
     while True:
-        price_changes = {}
+        changes = fetch_24h_changes()
+        await asyncio.sleep(60)
 
-        # جلب تغييرات الأسعار
-        for symbol in symbols:
-            price_changes[symbol] = fetch_price_change(symbol)
+        top_up = check_top_up(changes)
 
-        # الحصول على أعلى وأدنى 10 عملات
-        top_10 = sorted(price_changes.items(), key=lambda x: x[1], reverse=True)[:10]
-       
+        for symbol, change in top_up:
+            if symbol not in tracked_up:
+                # تحقق من الوقت
+                if symbol not in last_sent_time or datetime.now() - last_sent_time[symbol] > timedelta(hours=12):
+                    await send_message(f"عملة دخلت قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
+                    tracked_up[symbol] = change
+                    last_sent_time[symbol] = datetime.now()
 
-        # إعداد قائمة للعملات التي سنقوم بالتنبيه عنها
-        alerts = top_10
+        # تحديث القوائم
+        for symbol in list(tracked_up):
+            if symbol not in dict(top_up):
+                await send_message(f"عملة خرجت من قائمة أعلى 10: {symbol}")
+                del tracked_up[symbol]
+                del last_sent_time[symbol]
 
-        for symbol, change in alerts:
-            df = fetch_data(symbol)
-            buy_signal, sell_signal = check_signals(df)
+# بدء العملية
+if __name__ == '__main__':
+    asyncio.run(monitor())
 
-            # إرسال التنبيهات عبر تلغرام
-            if buy_signal and not previous_signals[symbol]['buy']:
-                message = f"تنبيه: إشارة شراء لـ {symbol} (تغير: {change:.2f}%) في {df['timestamp'].iloc[-1]}"
-                print(message)
-                previous_signals[symbol]['buy'] = True
-                previous_signals[symbol]['sell'] = False
-
-                await send_telegram_alert(message)
-
-            if sell_signal and not previous_signals[symbol]['sell']:
-                message = f"تنبيه: إشارة بيع لـ {symbol} (تغير: {change:.2f}%) في {df['timestamp'].iloc[-1]}"
-                print(message)
-                previous_signals[symbol]['sell'] = True
-                previous_signals[symbol]['buy'] = False
-
-                await send_telegram_alert(message)
-
-        await asyncio.sleep(60)  # الانتظار لمدة 1 دقيقة
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
 
