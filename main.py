@@ -1,5 +1,4 @@
 import ccxt
-import time
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder
@@ -69,6 +68,7 @@ symbols = [
     'OXT/USDT', 'HFT/USDT', 'BNT/USDT', 'LSK/USDT', 'DEFI/USDT',
 ]
 
+
 # إعداد بوت تلجرام
 TELEGRAM_TOKEN = '7391308695:AAGZ2pF2NwuNOTAdC9034YBeJhHrkpLPBvM'
 CHAT_ID = '7039034340'
@@ -88,8 +88,7 @@ def check_top_up(changes):
     top_up = sorted_changes[-10:]
     return top_up
 
-# قائمة لتتبع العملات وتوقيتها
-tracked_up = {}
+# تتبع العملات وتوقيت آخر إرسال
 last_sent_time = {}
 
 # إعداد تطبيق تلجرام
@@ -101,38 +100,29 @@ async def send_message(text):
 
 # دالة للمراقبة
 async def monitor():
-    global tracked_up, last_sent_time
+    global last_sent_time
     initial_changes = fetch_24h_changes()
     top_up = check_top_up(initial_changes)
 
+    # إضافة العملات الأولى للقوائم
     for symbol, change in top_up:
-        tracked_up[symbol] = change
-        last_sent_time[symbol] = datetime.now()
+        last_sent_time[symbol] = datetime.now()  # تحديث توقيت آخر إرسال
         await send_message(f"عملة حالياً في قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
 
     while True:
         changes = fetch_24h_changes()
-        await asyncio.sleep(60)
+        await asyncio.sleep(60)  # الانتظار دقيقة
 
         top_up = check_top_up(changes)
 
+        # طباعة العملات الصاعدة
         for symbol, change in top_up:
-            if symbol not in tracked_up:
-                # تحقق من الوقت
-                if symbol not in last_sent_time or datetime.now() - last_sent_time[symbol] > timedelta(hours=12):
-                    await send_message(f"عملة دخلت قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
-                    tracked_up[symbol] = change
-                    last_sent_time[symbol] = datetime.now()
-
-        # تحديث القوائم
-        for symbol in list(tracked_up):
-            if symbol not in dict(top_up):
-                await send_message(f"عملة خرجت من قائمة أعلى 10: {symbol}")
-                del tracked_up[symbol]
-                del last_sent_time[symbol]
+            # تحقق من توقيت آخر إرسال
+            if symbol not in last_sent_time or datetime.now() - last_sent_time[symbol] > timedelta(hours=12):
+                await send_message(f"عملة دخلت قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
+                last_sent_time[symbol] = datetime.now()  # تحديث توقيت آخر إرسال
 
 # بدء العملية
 if __name__ == '__main__':
     asyncio.run(monitor())
-
 
