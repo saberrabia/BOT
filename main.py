@@ -118,7 +118,7 @@ async def monitor():
         # طباعة العملات الصاعدة
         for symbol, change in top_up:
             # تحقق من توقيت آخر إرسال
-            if symbol not in last_sent_time or datetime.now() - last_sent_time[symbol] > timedelta(hours=12):
+            if symbol not in last_sent_time or datetime.now() - last_sent_time[symbol] > timedelta(hours=48):
                 await send_message(f"عملة دخلت قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
                 last_sent_time[symbol] = datetime.now()  # تحديث توقيت آخر إرسال
 
