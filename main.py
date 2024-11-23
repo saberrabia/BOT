@@ -107,7 +107,6 @@ async def monitor():
     # إضافة العملات الأولى للقوائم
     for symbol, change in top_up:
         last_sent_time[symbol] = datetime.now()  # تحديث توقيت آخر إرسال
-        await send_message(f"عملة حالياً في قائمة أعلى 10: {symbol} - تغيير: {change:.2f}%")
 
     while True:
         changes = fetch_24h_changes()
